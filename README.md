@@ -1,37 +1,21 @@
-## Welcome to GitHub Pages
+## Single particle diffusion characterization by deep learning
 
-You can use the [editor on GitHub](https://github.com/AnomDiffDB/DB/edit/master/README.md) to maintain and preview the content for your website in Markdown files.
+This repository contains the code accompanying the paper:
+[Single particle diffusion characterization by deep learning.](https://www.sciencedirect.com/science/article/pii/S0006349519305041)
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+The network models and functions provided here are used to classify single particle anomalous diffusion trajectories to one of three models:
+- Fractional Brownian motion
+- Continuous time random walk
+- Pure Brownian motion
 
-### Markdown
+And in addition, to extract the Hurst exponent for Fractional Brownian Motion trajectories.
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+Instructions on how to run the code can be found in the Instructions file.
 
-```markdown
-Syntax highlighted code block
+If you find this code useful, please cite our work:
+Granik, N., Weiss, L.E., Nehme, E., Levin, M., Chein, M., Perlson, E., Roichman, Y. and Shechtman, Y., 2019. Single particle diffusion characterization by deep learning. Biophysical Journal.
 
-# Header 1
-## Header 2
-### Header 3
+For any questions and comments, please contact us:
+naorgranik@gmail.com
+yoavsh@bm.technion.ac.il
 
-- Bulleted
-- List
-
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
-```
-
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
-
-### Jekyll Themes
-
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/AnomDiffDB/DB/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
-
-### Support or Contact
-
-Having trouble with Pages? Check out our [documentation](https://help.github.com/categories/github-pages-basics/) or [contact support](https://github.com/contact) and we’ll help you sort it out.
