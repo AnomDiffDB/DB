@@ -8,7 +8,7 @@ The network models and functions provided here are used to classify single parti
 - Continuous time random walk
 - Pure Brownian motion
 
-And in addition, to extract the Hurst exponent for Fractional Brownian Motion trajectories.
+In addition, the FBM regression networks can be used to extract the Hurst exponent from Fractional Brownian Motion trajectories.
 
 Instructions on how to run the code can be found in the Instructions file.
 
