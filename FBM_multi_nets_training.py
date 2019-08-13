@@ -9,11 +9,12 @@ from keras.callbacks import EarlyStopping,ReduceLROnPlateau,ModelCheckpoint
 
 batchsize = 64
 T = np.arange(2,4,0.1)  # this provides another layer of stochasticity to make the network more robust
-steps = [101] # number of steps to generate in total
-steps_actual = 10 # number of steps the network recieves as input out of the number of steps available
+steps = 100 # number of steps to generate
 initializer = 'he_normal'
-f = 16
+f = 16 # number of convolution filters in a single network layer
 numTraj = 10 # number of short trajectories the network recieves as input
+sigma = 0.1
+
 inputs = Input((numTraj,9,1))
 
 
@@ -85,10 +86,10 @@ callbacks = [EarlyStopping(monitor='val_loss',
                          save_weights_only=False)]
 
 
-gen = fbm_ensemble_regression(batchsize=batchsize,steps=steps,steps_actual=steps_actual,T=T,numTraj=numTraj)
+gen = fbm_ensemble_regression(batchsize=batchsize,steps=steps,T=T,numTraj=numTraj,sigma=sigma)
 history = model.fit_generator(generator=gen,
         steps_per_epoch=50,
         epochs=100,
         callbacks=callbacks,
-        validation_data=fbm_ensemble_regression(steps=steps,steps_actual=steps_actual,T=T,numTraj=numTraj),
+        validation_data=fbm_ensemble_regression(steps=steps,T=T,numTraj=numTraj,sigma=sigma),
         validation_steps=10)

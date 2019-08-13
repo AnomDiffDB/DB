@@ -19,6 +19,64 @@ matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype'] = 42
 sns.set(style="white", palette="muted", color_codes=True)
 
+
+"""
+Function classification_on_file is used to classify trajectories loaded from a
+.mat file
+
+The function assumes the input comes in the form x,y,z,...,N where N is the 
+trajectory serial number, starting from one.
+
+Input: 
+    file - string containing the file name, ending with .mat
+    
+Outputs:
+    prediction - Classification to diffusion model type where 0=FBM; 1=Brownian; 2=CTRW
+    y_full - matrix of network probabilities. Each trajectory recieves 3 values 
+             which are the probabilities of being assigned to a specific
+             diffusion model.
+"""
+
+
+def classification_on_file(file):
+    ### change here to load a different network model
+#    net_file = '.\Models\\classification_model_100_steps.h5'
+    net_file = 'new_class_model.h5'
+    model = load_model(net_file)
+
+    # load mat file and extract trajectory data
+    
+    f = scipy.io.loadmat(file)
+    for k in f.keys():
+        if k[0]=='_':
+            continue
+        varName = k
+        data = f[varName]
+        NAxes = (np.shape(data)[1]-1)
+    
+    numTraj = len(np.unique(data[:,NAxes]))
+    prediction = np.zeros([numTraj,1])
+    y_full = np.zeros([numTraj,3])
+    flag = np.zeros([numTraj,1])
+    for i in np.arange(1,numTraj+1):
+        y_pred = np.zeros([NAxes,3])
+        for j in range(NAxes):
+            x = data[np.argwhere(data[:,NAxes]==i),j]
+            x = x-np.mean(x)
+            if len(x)>=100: # classification network is trained on 100 step trajectories
+                flag[i-1] = 1 # mark trajectories that are being analyzed
+                dx = np.diff(x,axis=0)
+                dx = np.reshape(dx[:99],[1,99,1])
+            
+            y_pred[j,:] = model.predict(dx) # get the results for 1D 
+        ymean = np.mean(y_pred,axis=0) # calculate mean prediction of N-dimensional trajectory 
+        prediction[i-1,0] = np.argmax(ymean,axis=0) # translate to classification
+        y_full[i-1,:] = ymean
+    prediction = prediction[np.where(flag==1)]
+    return prediction,y_full
+
+
+
 """
 Function classification_heatmap is used to test the classification network 
 on FBM or CTRW trajectories as a function of noise levels and motion type parameters
@@ -199,56 +257,3 @@ def confusion_matrices(noiseType=0):
     return 1
 
 
-"""
-Function classification_on_file is used to classify trajectories loaded from a
-.mat file
-
-The function assumes the input comes in the form x,y,z,...,N where N is the 
-trajectory serial number, starting from one.
-
-Input: 
-    file - string containing the file name, ending with .mat
-    
-Outputs:
-    prediction - Classification to diffusion model type where 0=FBM; 1=Brownian; 2=CTRW
-    y_full - matrix of network probabilities. Each trajectory recieves 3 values 
-             which are the probabilities of being assigned to a specific
-             diffusion model.
-"""
-
-
-def classification_on_file(file):
-    ### change here to load a different network model
-    net_file = '.\Models\\classification_model_100_steps.h5'
-    model = load_model(net_file)
-
-    # load mat file and extract trajectory data
-    
-    f = scipy.io.loadmat(file)
-    for k in f.keys():
-        if k[0]=='_':
-            continue
-        varName = k
-        data = f[varName]
-        NAxes = (np.shape(data)[1]-1)
-    
-    numTraj = len(np.unique(data[:,NAxes]))
-    prediction = np.zeros([numTraj,1])
-    y_full = np.zeros([numTraj,3])
-    flag = np.zeros([numTraj,1])
-    for i in np.arange(1,numTraj+1):
-        y_pred = np.zeros([NAxes,3])
-        for j in range(NAxes):
-            x = data[np.argwhere(data[:,NAxes]==i),j]
-            x = x-np.mean(x)
-            if len(x)>100: # classification network is trained on 100 step trajectories
-                flag[i-1] = 1 # mark trajectories that are being analyzed
-                dx = np.diff(x,axis=0)
-                dx = np.reshape(dx[:99],[1,99,1])
-            
-            y_pred[j,:] = model.predict(dx) # get the results for 1D 
-        ymean = np.mean(y_pred,axis=0) # calculate mean prediction of N-dimensional trajectory 
-        prediction[i-1,0] = np.argmax(ymean,axis=0) # translate to classification
-        y_full[i-1,:] = ymean
-    prediction = prediction[np.where(flag==1)]
-    return prediction,y_full

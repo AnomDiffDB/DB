@@ -48,15 +48,19 @@ def MT_net_on_file(file):
         data = f[varName]
         NAxes = (np.shape(data)[1]-1)   
         
-    if ((len(data)+1)%10 > 0):
-        extra = len(data)%10
-        data = data[:-extra,:]
     numTraj = len(np.unique(data[:,NAxes]))
     
+    
+    # supplied networks can recive up to 150 short trajectories (with increments of 10)
     if numTraj>150:
         data = data[:1500,:]
         numTraj = 150
-        
+    
+    # supplied networks run on a set number of trajectories (10,20,30,...140,150)
+    if numTraj%10 > 0:
+        numTraj = numTraj - numTraj%10
+        data = data[:numTraj*10,:]
+    
     Xmat = np.zeros([NAxes,numTraj,9,1])
     for i in range(numTraj):
         for j in range(NAxes):

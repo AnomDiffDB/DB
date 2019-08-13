@@ -43,7 +43,7 @@ def predict_1D(x,stepsActual,reg_model):
         return 0
     
     dx = (np.diff(x[:stepsActual],axis=0)[:,0])
-    dx = autocorr(dx/(np.std(dx+1e-10)))
+    dx = autocorr(dx/(np.std(dx)+1e-10))
     dx = np.reshape(dx,[1,np.size(dx),1]) 
     pX = reg_model.predict(dx)
     
@@ -73,7 +73,7 @@ Outputs:
              all predictions done by the network (N-dimensions for each trajectory)
 """
 
-def net_on_file(file,NTraj,stepsActual):
+def FBM_net_on_file(file,stepsActual):
     
     # laod trained keras model
     # possible options: 25,50,100,200,300,500,700,1000
@@ -96,11 +96,8 @@ def net_on_file(file,NTraj,stepsActual):
         varName = k
         data = f[varName]
         NAxes = (np.shape(data)[1]-1)
-    if NTraj == 0:
         numTraj = len(np.unique(data[:,NAxes]))
-    else:
-        numTraj= NTraj
-    
+
     # allocate variables to hold temporary data and prediction results
     prediction = np.zeros([numTraj,1])
     NDpred = np.zeros([numTraj,(np.shape(data)[1]-1)])    
@@ -144,7 +141,7 @@ Outputs:
     NDpred - A matrix with dimensions [#trajetories,#dimensions] containing
              all predictions done by the network (N-dimensions for each trajectory)
 """
-def net_on_mat(X,NTraj,stepsActual):
+def net_on_mat(X,stepsActual):
     # function takes X matrix in the form [number of dimensions][number of trajectories][number of steps]
     
     ### change here to load a different network model
@@ -154,13 +151,8 @@ def net_on_mat(X,NTraj,stepsActual):
     
     net_file = '.\Models\\fbm_reg_'+str(stepsActual)+'_steps_optimized.h5'
     reg_model = load_model(net_file)
-    ###
     
-    
-    if NTraj == 0:
-        numTraj = np.shape(X)[1]
-    else:
-        numTraj = NTraj
+    numTraj = np.shape(X)[1]
         
         
     NDpred = np.zeros([np.shape(X)[0],np.shape(X)[1]])
@@ -351,7 +343,7 @@ Outputs:
 
 def estimation_convergence(file,stepsActual):
 
-    prediction,NDpred = net_on_file(file,0,stepsActual)
+    prediction,NDpred = FBM_net_on_file(file,stepsActual)
     trajVec = np.arange(5,np.int(len(prediction)),20)    
     
     tVec, MSD_mat = MSD_mat_from_file(file,0,100)

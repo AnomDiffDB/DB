@@ -367,42 +367,39 @@ def Brownian(N=1000,T=50,delta=1):
 Generator functions for neural network training per Keras specifications
 input for all functions is as follows:
     
-# input: 
-#   - batch size
-#   - steps: total number of steps in trajectory (list) 
-#   - T: final time (list)
-#   - steps_actual: total number of steps the network recieves (scalar)
-#     (can be lower than steps)
+input: 
+   - batch size
+   - steps: total number of steps in trajectory (list) 
+   - T: final time (list)
+   - sigma: Standard deviation of localization noise (std of a fixed cell/bead)
 '''
 
 # Randomly generate trajectories of different diffusion models for training of the 
 # classification network
     
-def generate(batchsize=32,steps=5000,T=15,steps_actual=1000):
+def generate(batchsize=32,steps=1000,T=15,sigma=0.1):
     while True:
         # randomly choose a set of trajectory-length and final-time. This is intended
         # to increase variability in simuation conditions.
-        steps1 = np.random.choice(steps,size=1).item()
         T1 = np.random.choice(T,size=1).item()
-        out = np.zeros([batchsize,steps_actual-1,1])
+        out = np.zeros([batchsize,steps-1,1])
         label = np.zeros([batchsize,1])
         for i in range(batchsize):
             # randomly select diffusion model to simulate for this iteration
             label[i,0] = np.random.choice([0,1,2])
             if label[i,0] == 0: 
-                H = np.random.uniform(low=0.1,high=0.9)
-                x,y,t = fbm_diffusion(n=steps1,H=H,T=T1)
+                H = np.random.uniform(low=0.1,high=0.99)
+                x,y,t = fbm_diffusion(n=steps,H=H,T=T1)
                 if H > 0.42 and H < 0.58:
                     label[i,0] = 1
             elif label[i,0] == 1:
-                x,y,t = Brownian(n=steps1,T=T1) 
+                x,y = Brownian(N=steps,T=T1,delta=1) 
             else:
-                x,y,t = CTRW(n=steps1,alpha=np.random.uniform(low=0.2,high=1),T=T1)
-            sigma = np.random.choice([0,0.1,0.25])
-            noise = sigma*np.std(np.diff(x,axis=0),axis=0)*np.random.randn(1,steps_actual)
+                x,y,t = CTRW(n=steps,alpha=np.random.uniform(low=0.2,high=1),T=T1)
+            noise = sigma*np.random.randn(1,steps)
             x1 = np.reshape(x,[1,len(x)])
             x1 = x1-np.mean(x1)
-            x_n = x1[0,:steps_actual]+noise
+            x_n = x1[0,:steps]+noise
             dx = np.diff(x_n)
             out[i,:,0] = dx
        
@@ -414,23 +411,22 @@ def generate(batchsize=32,steps=5000,T=15,steps_actual=1000):
 # generate FBM trajectories with different Hurst exponent values 
 # for training of the Hurst-regression network
         
-def fbm_regression(batchsize=32,steps=500,T=1,steps_actual=100):
+def fbm_regression(batchsize=32,steps=500,T=[1],sigma=0.1):
     while True:
         # randomly choose a set of trajectory-length and final-time. This is intended
         # to increase variability in simuation conditions.
-        steps1 = np.random.choice(steps,size=1).item()
         T1 = np.random.choice(T,size=1).item()
-        out = np.zeros([batchsize,steps_actual-1,1])
+        out = np.zeros([batchsize,steps-1,1])
         
         label = np.zeros([batchsize,1])
         for i in range(batchsize):
             H = np.random.uniform(low=0.05,high=0.95)
             label[i,0] = H
-            x,y,t = fbm_diffusion(n=steps1,H=H,T=T1)
+            x,y,t = fbm_diffusion(n=steps,H=H,T=T1)
             
-            n = 0.01*np.random.randn(steps1,)
+            n = sigma*np.random.randn(steps,)
             x_n = x+n
-            dx = np.diff(x_n[:steps_actual],axis=0)
+            dx = np.diff(x_n,axis=0)
             
             out[i,:,0] = autocorr((dx)/(np.std(dx)))
 
@@ -443,13 +439,12 @@ def fbm_regression(batchsize=32,steps=500,T=1,steps_actual=100):
 # For training the Hurst regression multi-track network
 # Additional required input is numTraj: number of trajectories in matrix
         
-def fbm_ensemble_regression(batchsize=32,steps=500,T=1,steps_actual=10,numTraj=50):
+def fbm_ensemble_regression(batchsize=32,steps=500,T=1,numTraj=50,sigma=0.1):
     while True:
         # randomly choose a set of trajectory-length and final-time. This is intended
         # to increase variability in simuation conditions.
-        steps1 = np.random.choice(steps,size=1).item()
         T1 = np.random.choice(T,size=1).item()
-        out = np.zeros([batchsize,numTraj,steps_actual-1,1])
+        out = np.zeros([batchsize,numTraj,9,1])
         
         label = np.zeros([batchsize,1])
         for i in range(batchsize):
@@ -458,11 +453,11 @@ def fbm_ensemble_regression(batchsize=32,steps=500,T=1,steps_actual=10,numTraj=5
             for k in range(numTraj):
                 Hdist = np.random.uniform(low=H-0.05,high=H+0.05)
             
-                x,y,t = fbm_diffusion(n=steps1,H=Hdist,T=T1)
+                x,y,t = fbm_diffusion(n=steps,H=Hdist,T=T1)
             
-                n = 0.02*np.random.randn(steps1,)
+                n = sigma*np.random.randn(steps,)
                 x_n = x+n
-                dx = np.diff(x_n[:steps_actual],axis=0)
+                dx = np.diff(x_n[:10],axis=0)
             
                 out[i,k,:,0] = autocorr((dx)/(np.std(dx)))
         
@@ -472,11 +467,10 @@ def fbm_ensemble_regression(batchsize=32,steps=500,T=1,steps_actual=10,numTraj=5
 # regression network. This network recieves as input: the mean and std of the absolute
 # value of the difference.
         
-def brownian_scalar_regression(batchsize=32,steps=500,T=1,steps_actual=100):
+def brownian_scalar_regression(batchsize=32,steps=500,T=[1],sigma=0.1):
     while True:
         # randomly choose a set of trajectory-length and final-time. This is intended
         # to increase variability in simuation conditions.
-        steps1 = np.random.choice(steps,size=1).item()
         T1 = np.random.choice(T,size=1).item()
         out = np.zeros([batchsize,2,1])        
         label = np.zeros([batchsize,1])
@@ -484,12 +478,10 @@ def brownian_scalar_regression(batchsize=32,steps=500,T=1,steps_actual=100):
         high = 1
         for i in range(batchsize):
             scale = np.random.uniform(low=low,high=high)
-            noise = np.random.uniform(low = 0, high = 1)
-            label[i,0] = (scale)
-            x,y = Brownian(N=steps1-1,T=T1,delta=np.sqrt(2*scale*10/0.55**2))
-            n = noise*(np.std(np.diff(x,axis=0)))*np.random.randn(steps1,)
+            label[i,0] = scale
+            x,y = Brownian(N=steps-1,T=T1,delta=np.sqrt(2*scale*10/0.55**2))
+            n = sigma*np.random.randn(steps,)
             x_n = x+n
-            x_n = x_n[:steps_actual]
             dx = np.diff(x_n,axis=0)
             
             m = np.mean(np.abs(dx),axis=0)
