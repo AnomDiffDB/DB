@@ -9,6 +9,7 @@ from keras.callbacks import EarlyStopping,ReduceLROnPlateau,ModelCheckpoint
 
 
 batchsize = 64
+T=[100]
 steps = 1000 # number of steps to generate
 initializer = 'he_normal'
 f = 32 # number of convolution filters in a single network layer
