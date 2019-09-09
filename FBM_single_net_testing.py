@@ -43,7 +43,7 @@ def predict_1D(x,stepsActual,reg_model):
         return 0
     
     dx = (np.diff(x[:stepsActual],axis=0)[:,0])
-    dx = autocorr(dx/(np.std(dx)+1e-10))
+    dx = autocorr((dx-np.mean(dx))/(np.std(dx)+1e-10))
     dx = np.reshape(dx,[1,np.size(dx),1]) 
     pX = reg_model.predict(dx)
     

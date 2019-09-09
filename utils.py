@@ -396,7 +396,7 @@ def generate(batchsize=32,steps=1000,T=15,sigma=0.1):
                 x,y = Brownian(N=steps,T=T1,delta=1) 
             else:
                 x,y,t = CTRW(n=steps,alpha=np.random.uniform(low=0.2,high=1),T=T1)
-            noise = sigma*np.random.randn(1,steps)
+            noise = np.sqrt(sigma)*np.random.randn(1,steps)
             x1 = np.reshape(x,[1,len(x)])
             x1 = x1-np.mean(x1)
             x_n = x1[0,:steps]+noise
@@ -404,14 +404,14 @@ def generate(batchsize=32,steps=1000,T=15,sigma=0.1):
             out[i,:,0] = dx
        
         label = to_categorical(label,num_classes=3)
-        
+
         yield out,label
         
         
 # generate FBM trajectories with different Hurst exponent values 
 # for training of the Hurst-regression network
         
-def fbm_regression(batchsize=32,steps=500,T=[1],sigma=0.1):
+def fbm_regression(batchsize=32,steps=1000,T=[1],sigma=0.1):
     while True:
         # randomly choose a set of trajectory-length and final-time. This is intended
         # to increase variability in simuation conditions.
@@ -420,15 +420,15 @@ def fbm_regression(batchsize=32,steps=500,T=[1],sigma=0.1):
         
         label = np.zeros([batchsize,1])
         for i in range(batchsize):
-            H = np.random.uniform(low=0.05,high=0.95)
+            H = np.random.uniform(low=0.03,high=0.97)
             label[i,0] = H
             x,y,t = fbm_diffusion(n=steps,H=H,T=T1)
             
-            n = sigma*np.random.randn(steps,)
-            x_n = x+n
+            n = np.sqrt(sigma)*np.random.randn(steps,)
+            x_n = x[:steps,]+n
             dx = np.diff(x_n,axis=0)
             
-            out[i,:,0] = autocorr((dx)/(np.std(dx)))
+            out[i,:,0] = autocorr((dx-np.mean(dx))/(np.std(dx)))
 
         
         yield out,label
